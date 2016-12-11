@@ -10,9 +10,26 @@
 	<script src="lib/jquery-3.1.0.min.js"></script>
 	<script src="lib/d3.chart.min.js"></script>
 	<script src="lib/lodash-min.js"></script>
+	<script src="src/prototype.module.js"></script>
+
+	<!-- For the library -->
+    <script src="lib/module.js"></script>
+    <link rel="stylesheet" type="text/css" href="src/style/module_.css" />
+    <script src="src/vis/module_.js"></script>
+
 </head>
 <body>
-
-
+	<h1>Development Page</h1>
+    <div class="vis" id="_module"></div>
 </body>
+<script type="text/javascript">
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Generic Module
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    var chart = d3.select('#_module')
+        .append('svg')
+        .chart('module', {
+        });
+</script>
 </html>

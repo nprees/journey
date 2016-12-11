@@ -1,0 +1,320 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Table sort example in D3</title>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <link rel="stylesheet" type="text/css" href="table.css">
+</head>
+<body>
+<h1>Sortable Table</h1>
+<table cellspacing="0">
+    <thead></thead>
+    <tbody></tbody>
+</table>
+<script type="text/javascript">
+var table = {};
+
+var options = {
+    title: "This is the chart title.",
+    columns: [
+        {
+            id: 1,
+            field: "Rating",
+            type: "text",
+            name: "RATING",
+            width: 65,
+            sort: true,
+            rightBorder: false,
+            percentageField: false,
+            headerFontWeight: "bold",
+            headerAlignment: "left",
+            bodyFontWeight: "normal",
+            bodyAlignment: "left",
+        },
+        {
+            id: 2,
+            field: "Icon",
+            type: "icon",
+            name: "",
+            width: 25,
+            sort: false,
+            rightBorder: false,
+            percentageField: false,
+            headerFontWeight: "bold",
+            headerAlignment: "left",
+            bodyFontWeight: "normal",
+            bodyAlignment: "left",
+        },
+        {
+            id: 3,
+            field: "Team",
+            type: "text",
+            name: "TEAM",
+            width: 200,
+            sort: true,
+            rightBorder: true,
+            percentageField: false,
+            headerFontWeight: "bold",
+            headerAlignment: "left",
+            bodyFontWeight: "bold",
+            bodyAlignment: "left",
+        },
+        {
+            id: 4,
+            field: "Wins",
+            type: "text",
+            name: "WINS",
+            width: 65,
+            sort: true,
+            rightBorder: false,
+            percentageField: false,
+            headerFontWeight: "lighter",
+            headerAlignment: "left",
+            bodyFontWeight: "normal",
+            bodyAlignment: "left",
+        },
+        {
+            id: 5,
+            field: "Losses",
+            type: "text",
+            name: "LOSSES",
+            width: 65,
+            sort: true,
+            rightBorder: false,
+            percentageField: false,
+            headerFontWeight: "lighter",
+            headerAlignment: "left",
+            bodyFontWeight: "normal",
+            bodyAlignment: "left",
+        },
+        {
+            id: 6,
+            field: "Goal",
+            type: "text",
+            name: "GOAL DIFF.",
+            width: 65,
+            sort: true,
+            rightBorder: true,
+            percentageField: false,
+            headerFontWeight: "lighter",
+            headerAlignment: "left",
+            bodyFontWeight: "normal",
+            bodyAlignment: "left",
+        },
+        {
+            id: 7,
+            field: "Win",
+            type: "text",
+            name: "WIN PREM. LEAGUE",
+            width: 200,
+            sort: true,
+            rightBorder: false,
+            percentageField: true,
+            headerFontWeight: "bold",
+            headerAlignment: "left",
+            bodyFontWeight: "normal",
+            bodyAlignment: "left",
+        }
+    ],
+    superHeadings: [
+        {
+            id: 1,
+            name: "Forecasted Results",
+            fields: ["Wins", "Losses", "Goal"]
+        }
+    ]
+};
+
+var data = [
+    {
+        Rating: 1046,
+        Team: "Manchester United",
+        Icon: "Manchester United.ico",
+        Wins: 10,
+        Losses: 4,
+        Goal: "+12",
+        Win: 23
+    },
+    {
+        Rating: 1050,
+        Team: "Manchester City",
+        Icon: "Manchester City.ico",
+        Wins: 13,
+        Losses: 1,
+        Goal: "+15",
+        Win: 32
+    },
+    {
+        Rating: 1012,
+        Team: "Chelsea",
+        Icon: "Chelsea.ico",
+        Wins: 6,
+        Losses: 6,
+        Goal: "+5",
+        Win: 12
+    },
+    {
+        Rating: 995,
+        Team: "West Ham United",
+        Icon: "West Ham United.ico",
+        Wins: 4,
+        Losses: 10,
+        Goal: "-12",
+        Win: 9
+    },
+    {
+        Rating: 945,
+        Team: "Middlesbrough",
+        Icon: "Middlesbrough.ico",
+        Wins: 1,
+        Losses: 13,
+        Goal: "-21",
+        Win: 0
+    }
+];
+
+// On load
+window.onload = draw(_.map(options.columns, "field")[0]);
+
+// Function called to draw and update the table.
+function draw(sortBy) {
+
+    // Remove the table body.
+    d3.select("tbody").selectAll("tr").remove();
+
+    // Find table headers.
+    var headers = _.map(options.columns, "field");
+
+    // Append the headers to the table.
+    var th = d3.select("thead").selectAll("th")
+        .data(headers)
+        .enter()
+        .append("th")
+        .classed("sort", function(d) {
+            return getColumn(d).sort;
+        })
+        .attr("onclick", function (d, i) { 
+            return getColumn(d).sort ? "draw('" + d + "');" : null;
+        })
+        .text(function(d) {
+            return getColumn(d).name;
+        })
+        .attr("width", function(d) {
+            return getColumn(d).width;
+        })
+        .style("font-weight", function(d) {
+            return getColumn(d).headerFontWeight;
+        })
+        .style("text-align", function(d) {
+            return getColumn(d).headerAlignment;
+        });
+
+    // Rows
+    var tr = d3.select("tbody").selectAll("tr")
+        .data(data)
+        .enter()
+        .append("tr")
+        .sort(function (a, b) { 
+            if (table.sort === sortBy) {
+                return a == null || b == null ? 0 : initialSort(a[sortBy], b[sortBy]); 
+            } else {
+                return a == null || b == null ? 0 : secondsSort(a[sortBy], b[sortBy]); 
+            }
+            
+        });
+
+    // Cells
+    var td = tr.selectAll("td")
+        .data(function(d) { return getValues(d); })
+        .enter().append("td")
+        .style("border-right", function(d) {
+            return getColumn(d[0]).rightBorder ? "2px solid #161e22" : null;
+        })
+        .style("font-weight", function(d) {
+            return getColumn(d[0]).bodyFontWeight;
+        })
+        .text(function(d) { 
+            if (getColumn(d[0]).type === "text") {
+                if (getColumn(d[0]).percentageField) {
+                    return d[1] + "%";
+                } else {
+                    return d[1];
+                }
+            } else {
+                return "";
+            }
+        })
+        .each(function(d) {
+            if (getColumn(d[0]).type === "icon") {
+                d3.select(this)
+                    .append("svg")
+                    .attr("width",25 + "px")
+                    .attr("height",25 + "px")
+                    .append("image")
+                    .attr('xlink:href',"footballicons/" + d[1])
+                    .attr("width",25 + "px")
+                    .attr("height",25 + "px");
+            }
+        });
+
+    // Remove any existing selections.
+    d3.select(".selected").classed("selected", false);
+
+    // If a sort by is specified, set it to the selected row.
+    if(sortBy) {
+        d3.selectAll("th.sort").filter(function(d) {
+            return d === sortBy;
+        }).classed("selected", true);
+    }
+
+    if (table.sort !== sortBy) {
+        table.sort = sortBy;
+    } else {
+        table.sort = sortBy + '-rev';
+    }
+}
+
+function initialSort(a, b) {
+    var type = typeof a;
+
+    if (type === "string") {
+        return sortDscColumn(a, b);
+    } else if (type === "number") {
+        return sortAscColumn(a, b);
+    }
+}
+
+function secondsSort(a, b) {
+    var type = typeof a;
+
+    if (type === "string") {
+        return sortAscColumn(a, b);
+    } else if (type === "number") {
+        return sortDscColumn(a, b) ;
+    }
+}
+
+function getColumn(field) {
+    return _.find(options.columns, function(a) { return a.field === field; });
+}
+
+function sortDscColumn(a, b) {
+    return b > a ? 1 : a === b ? 0 : -1;
+}
+
+function sortAscColumn(a, b) {
+    return a > b ? 1 : a === b ? 0 : -1;
+}
+
+function getValues(row) {
+    var ret = new Array();
+    _.each(_.map(options.columns, "field"), function(d) { 
+        ret.push([d, row[d]]);
+    });
+    return ret;
+};
+</script>
+</body>
+</html> 
