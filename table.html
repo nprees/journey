@@ -10,7 +10,8 @@
 <body>
 <h1>Sortable Table</h1>
 <table cellspacing="0">
-    <thead></thead>
+    <thead class="super"></thead>
+    <thead class="standard"></thead>
     <tbody></tbody>
 </table>
 <script type="text/javascript">
@@ -108,7 +109,21 @@ var options = {
             field: "Win",
             type: "text",
             name: "WIN PREM. LEAGUE",
-            width: 200,
+            width: 100,
+            sort: true,
+            rightBorder: false,
+            percentageField: true,
+            headerFontWeight: "bold",
+            headerAlignment: "left",
+            bodyFontWeight: "normal",
+            bodyAlignment: "left",
+        },
+        {
+            id: 8,
+            field: "Forecast",
+            type: "text",
+            name: "FORECAST",
+            width: 100,
             sort: true,
             rightBorder: false,
             percentageField: true,
@@ -123,6 +138,11 @@ var options = {
             id: 1,
             name: "Forecasted Results",
             fields: ["Wins", "Losses", "Goal"]
+        },
+        {
+            id: 2,
+            name: "Season Results",
+            fields: ["Win", "Forecast"]
         }
     ]
 };
@@ -135,7 +155,8 @@ var data = [
         Wins: 10,
         Losses: 4,
         Goal: "+12",
-        Win: 23
+        Win: 23,
+        Forecast: 15
     },
     {
         Rating: 1050,
@@ -144,7 +165,8 @@ var data = [
         Wins: 13,
         Losses: 1,
         Goal: "+15",
-        Win: 32
+        Win: 32,
+        Forecast: 11
     },
     {
         Rating: 1012,
@@ -153,7 +175,8 @@ var data = [
         Wins: 6,
         Losses: 6,
         Goal: "+5",
-        Win: 12
+        Win: 12,
+        Forecast: 10
     },
     {
         Rating: 995,
@@ -162,7 +185,8 @@ var data = [
         Wins: 4,
         Losses: 10,
         Goal: "-12",
-        Win: 9
+        Win: 9,
+        Forecast: 8
     },
     {
         Rating: 945,
@@ -171,7 +195,8 @@ var data = [
         Wins: 1,
         Losses: 13,
         Goal: "-21",
-        Win: 0
+        Win: 0,
+        Forecast: 6
     }
 ];
 
@@ -187,11 +212,70 @@ function draw(sortBy) {
     // Find table headers.
     var headers = _.map(options.columns, "field");
 
+    // Create and position the super headers objects.
+    table.supers = [];
+    table.superFields = [].concat.apply([], _.map(options.superHeadings, "fields"));
+    table.superSources = _.map(options.superHeadings, function(d, i) {
+        return { pos: i, field: d.fields[0] };
+    });
+
+    // Populate the super headers object
+    _.each(headers, function(d) {
+        if (_.contains(table.superFields, d)) {
+            if (_.contains(_.map(table.superSources, "field"), d)) {
+                var superField = options.superHeadings[
+                    _.find(table.superSources, function(a) { 
+                        return a.field === d; 
+                    }).pos
+                ];
+
+                table.supers.push({
+                    name: superField.name,
+                    fields: superField.fields,
+                })
+            }
+        } else {
+            table.supers.push({
+                name: null,
+                fields: []
+            })
+        }
+    });
+
+    // Append the super headings
+    d3.select("thead.super").selectAll("th")
+        .data(table.supers)
+        .enter()
+        .append("th")
+        .classed("th-super", function(d) {
+            return d.fields.length;
+        })
+        .classed("th-super-null", function(d) {
+            return !d.fields.length;
+        })
+        .text(function(d) {
+            return d.name
+        })
+        .attr("colspan", function(d) {
+            return d.fields.length > 0 ? d.fields.length : 1;
+        });
+
     // Append the headers to the table.
-    var th = d3.select("thead").selectAll("th")
+    var th = d3.select("thead.super").selectAll("th")
+        .data(options.superHeadings)
+        .enter()
+        .append("th")
+        .classed("sort", true)
+        .text(function(d) {
+            return d.name;
+        })
+
+    // Append the headers to the table.
+    var th = d3.select("thead.standard").selectAll("th")
         .data(headers)
         .enter()
         .append("th")
+        .classed("th-standard", true)
         .classed("sort", function(d) {
             return getColumn(d).sort;
         })
@@ -276,6 +360,24 @@ function draw(sortBy) {
     }
 }
 
+
+function getValues(row) {
+    var ret = new Array();
+    _.each(_.map(options.columns, "field"), function(d) { 
+        ret.push([d, row[d]]);
+    });
+    return ret;
+}
+
+function getColumn(field) {
+    return _.find(options.columns, function(a) { 
+        return a.field === field; 
+    });
+}
+
+// ----------------------------------------------------
+// Table Sort
+// ----------------------------------------------------
 function initialSort(a, b) {
     var type = typeof a;
 
@@ -296,10 +398,6 @@ function secondsSort(a, b) {
     }
 }
 
-function getColumn(field) {
-    return _.find(options.columns, function(a) { return a.field === field; });
-}
-
 function sortDscColumn(a, b) {
     return b > a ? 1 : a === b ? 0 : -1;
 }
@@ -307,14 +405,6 @@ function sortDscColumn(a, b) {
 function sortAscColumn(a, b) {
     return a > b ? 1 : a === b ? 0 : -1;
 }
-
-function getValues(row) {
-    var ret = new Array();
-    _.each(_.map(options.columns, "field"), function(d) { 
-        ret.push([d, row[d]]);
-    });
-    return ret;
-};
 </script>
 </body>
 </html> 
